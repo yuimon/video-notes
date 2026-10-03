@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>動画ノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F0E6;
+  --surface:#FFFFFF;
+  --surface-2:#E9E6D8;
+  --text:#23261F;
+  --text-muted:#696F60;
+  --border:#D9D5C4;
+  --accent:#2E6B58;
+  --accent-text:#FFFFFF;
+  --g-biyou:#AD4E82;
+  --g-kintore:#BD7A1E;
+  --g-shukan:#2E7D5F;
+  --g-mind:#6457A6;
+  --g-ai:#2E6FA0;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16180F;
+    --surface:#1E2117;
+    --surface-2:#282C20;
+    --text:#E9E6D8;
+    --text-muted:#A6A693;
+    --border:#3A3E2F;
+    --accent:#6FC2A3;
+    --accent-text:#10241B;
+    --g-biyou:#E08DBE;
+    --g-kintore:#E3A857;
+    --g-shukan:#67C79E;
+    --g-mind:#A79BE0;
+    --g-ai:#7CB6E6;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16180F;
+  --surface:#1E2117;
+  --surface-2:#282C20;
+  --text:#E9E6D8;
+  --text-muted:#A6A693;
+  --border:#3A3E2F;
+  --accent:#6FC2A3;
+  --accent-text:#10241B;
+  --g-biyou:#E08DBE;
+  --g-kintore:#E3A857;
+  --g-shukan:#67C79E;
+  --g-mind:#A79BE0;
+  --g-ai:#7CB6E6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+  padding-inline:16px;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  max-width:720px;
+  margin-inline:auto;
+}
+.serif{font-family:"Shippori Mincho",serif;}
+h1,h2,h3{text-wrap:balance;}
+
+header.top{
+  position:sticky;
+  top:env(safe-area-inset-top,0px);
+  background:var(--bg);
+  padding-block:14px 10px;
+  z-index:10;
+  border-bottom:1px solid var(--border);
+}
+header.top h1{
+  font-size:1.3rem;
+  margin:0 0 4px;
+  letter-spacing:.02em;
+}
+header.top .sub{
+  color:var(--text-muted);
+  font-size:.78rem;
+  margin:0 0 10px;
+}
+.search-row{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+#q{
+  flex:1;
+  padding:9px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  font-size:.92rem;
+}
+#q:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.chips{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:2px;
+  scrollbar-width:none;
+}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto;
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-muted);
+  font-size:.82rem;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+}
+.chip[data-active="1"]{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+  font-weight:600;
+}
+.count-row{
+  color:var(--text-muted);
+  font-size:.76rem;
+  padding-block:8px 4px;
+}
+
+main{padding-bottom:40px;}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+.card summary{
+  list-style:none;
+  padding:13px 14px;
+  cursor:pointer;
+  display:block;
+}
+.card summary::-webkit-details-marker{display:none;}
+.row-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+}
+.genre-chip{
+  display:inline-block;
+  font-size:.68rem;
+  padding:2px 9px;
+  border-radius:999px;
+  color:#fff;
+  font-weight:600;
+  white-space:nowrap;
+  margin-bottom:6px;
+}
+.card h3{
+  font-size:1.0rem;
+  margin:0 0 4px;
+  line-height:1.4;
+}
+.meta{
+  font-size:.74rem;
+  color:var(--text-muted);
+  margin-bottom:6px;
+}
+.oneline{
+  font-size:.95rem;
+  padding:2px 0 0;
+}
+.arrow{
+  flex:0 0 auto;
+  color:var(--text-muted);
+  font-size:.8rem;
+  padding-top:2px;
+  transition:transform .15s;
+}
+.card[open] .arrow{transform:rotate(180deg);}
+
+.detail{
+  padding:0 14px 16px;
+  border-top:1px solid var(--border);
+}
+.detail h4{
+  font-size:.78rem;
+  color:var(--text-muted);
+  margin:14px 0 6px;
+  font-weight:700;
+}
+.detail ul{
+  margin:0;
+  padding-left:1.1em;
+}
+.detail li{
+  font-size:.88rem;
+  line-height:1.65;
+  margin-bottom:6px;
+}
+.basis{
+  font-size:.85rem;
+  line-height:1.6;
+  background:var(--surface-2);
+  border-radius:8px;
+  padding:9px 11px;
+}
+.tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.tag{
+  font-size:.72rem;
+  color:var(--text-muted);
+  border:1px solid var(--border);
+  padding:3px 9px;
+  border-radius:999px;
+}
+.link{
+  display:inline-block;
+  margin-top:12px;
+  font-size:.82rem;
+  color:var(--accent);
+  text-decoration:none;
+  border-bottom:1px solid var(--accent);
+}
+.empty{
+  text-align:center;
+  color:var(--text-muted);
+  padding:50px 10px;
+  font-size:.9rem;
+}
+.footer-note{
+  text-align:center;
+  color:var(--text-muted);
+  font-size:.72rem;
+  padding:10px 0 30px;
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="serif">動画ノート</h1>
+  <p class="sub">YouTube動画の要約置き場・30本（2026-10-04〜）</p>
+  <div class="search-row">
+    <input id="q" type="text" placeholder="タイトル・チャンネル・タグで検索" autocomplete="off">
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="count-row" id="countRow"></div>
+</header>
+
+<main id="main"></main>
+<div class="empty" id="empty" hidden>該当する動画が見つかりません</div>
+<p class="footer-note">くりまん製・動画が増えたらここに追記していきます</p>
+
+<script>
+const GENRES = [
+  {key:"biyou", label:"自分磨き", varname:"--g-biyou"},
+  {key:"kintore", label:"筋トレ・体", varname:"--g-kintore"},
+  {key:"shukan", label:"習慣・生産性", varname:"--g-shukan"},
+  {key:"mind", label:"考え方・メンタル", varname:"--g-mind"},
+  {key:"ai", label:"AI・副業・お金", varname:"--g-ai"},
+];
+
+const VIDEOS = [
+// ===== 班A 自分磨き・美容 =====
+{
+  genre:"biyou",
+  title:`【ベストバイ】イケメンになるために買ってよかった11選`,
+  url:`https://youtu.be/yZAp2Oswpzs`,
+  channel:`こーき / Hamada Koki`, duration:`15分`, date:`2025-12-07`,
+  one:`毎日使っている購入品11点を美容・ガジェット・服まで横断紹介`,
+  points:[
+    `CLIO キルカバー ファンウェア クッション 23N: シクロペンタシロキサン配合で密着力が高く、1回押すだけで毛穴がカバーできる。23Nは最も暗い色だが明るめなので、話者より肌が暗い人は白浮きする`,
+    `too cool for school アートクラス ジペンシル 01: 涙袋の下に白をちょんちょん乗せるとぷっくり見える。約1,000円。中顔面が短く見える`,
+    `ヘアミルク（ブランド名不明）: ブリーチ・縮毛矯正・毎日アイロンの人向け。濡れ髪に2プッシュしてドライヤー。4本リピート`,
+    `VITAS プロテイン バナナ味: 毎朝とトレーニング後に飲む。甘さが重くない`,
+    `メゾン マルジェラ REPLICA オードトワレ「オン・ア・デート」: ロゼワインの香り。昼のデートにも夜にも使える`,
+    `エルメス リング「シェーヌ・ダンクル」: 成田空港で購入。「いいものをつけている」感覚が自信やオーラにつながる`,
+    `レタッチ ニューウェイブ（スタイリング剤）: 軽いつけ心地で手ぐしが通り、崩れても直せる`,
+    `GENTLE MONSTER サングラス: フレーム付きなので似合いやすく、ヘアセットしていない日でも様になる`,
+    `AirPods: ノイズキャンセリングが強くジムで集中できる`,
+    `韓国ブランド「クア」のハイネックコート: 襟が首から先に向かって下がる形なので首が詰まって見えない`,
+    `韓国 Hello APM で買ったパーカー: 「裾が開く（お腹が出ない）」「フードが立つ」「着丈が短い」を基準に選ぶ`,
+  ],
+  basis:`実体験（自身の購入品レビュー。比較検証なし）`,
+  tags:[`買い物`,`メンズメイク`,`ヘアケア`,`香水`,`ファッション`],
+},
+{
+  genre:"biyou",
+  title:`【メンズ磨き】男が最初にやるべき美容を女目線で紹介します。※初心者必見！【インスタ3000人調査】`,
+  url:`https://youtu.be/ef5zcOlSkVU`,
+  channel:`八田エミリの日常`, duration:`17分`, date:`2026-09-19`,
+  one:`男性約3000人の「効いた美容」を女性目線で解説、習慣が中心`,
+  points:[
+    `面倒なこと・嫌なことを先に片付ける癖をつけると自分磨きの余裕が生まれる`,
+    `砂糖飲料をやめて水だけにする。いきなり全部でなく2日に1本や炭酸水に置き換えて続ける`,
+    `スマホ首に注意。スマホを顔の高さに持ち上げるだけで首が真っすぐになる`,
+    `ゴシゴシ洗顔をやめ、泡をクッションにして洗う`,
+    `枕カバーを毎日替える。面倒ならフェイスタオルを敷いて毎日洗う`,
+    `睡眠。起床時刻の固定が特に重要。参考書『今さら聞けない 睡眠の超基本』（柳沢正史 監修）`,
+    `眉毛は「顔のフレーム」。周りのうぶ毛を抜くだけでも変わる`,
+    `オールインワンで「顔に何かする習慣」を作る。無印良品の4種を肌悩み別に紹介`,
+    `筋トレが調査で最多意見。ジムに行けないなら腕立て10回3セットから`,
+    `自炊、特に和食。外食と比べ脂質・塩分を自分で調整できる`,
+    `クレンジングでテカり・ニキビが減る。鼻の角栓は10〜15分置いて優しく取る`,
+    `UVケア。肌老化の8割が光の影響と言われている`,
+    `太らないことが一番の美容。輪郭・服のシルエット・清潔感に影響`,
+  ],
+  basis:`調査（Instagramで男性約3000人に質問）＋本人の美容知識。数値の出典は示されず`,
+  tags:[`習慣`,`スキンケア`,`睡眠`,`筋トレ`,`眉毛`],
+},
+{
+  genre:"biyou",
+  title:`【やめるだけ】メンズメイクのNG7選_辞めるだけですぐ上達`,
+  url:`https://youtu.be/WRvFEd34j0s`,
+  channel:`美男子ヤノ`, duration:`19分`, date:`2026-01-18`,
+  one:`自分がやめて良くなったメンズメイクのNG7つと番外1つ`,
+  points:[
+    `NG1 ベースの色が合っていない: 首とフェイスラインの色に合わせる。白すぎが最大の違和感`,
+    `NG2 ファンデ・BBの量が多すぎ: 半プッシュ、グリーンピース大を顔の中心から伸ばす`,
+    `NG3 下地を塗らない: トーンと血色を整え密着を上げるとファンデの量を減らせる`,
+    `NG4 メイク前に保湿しない: 保湿を省くとメイクが崩れる`,
+    `NG5 パウダーをしない: テカり消しと毛穴ぼかしの2効果。パフよりブラシで薄くつける`,
+    `NG6 眉毛を長い線で描く: 毛を1本1本短く描き、スクリューブラシでぼかす`,
+    `NG7 リップのつけすぎ: 赤すぎない色を選び、唇の中心にちょんちょん、端は指でぼかす`,
+    `番外 部屋のライトが暗い: 暗い部屋で仕上げるとムラや赤すぎに気づけない`,
+  ],
+  basis:`実体験（自身がやめてよかったNG。女性YouTuberの動画を見て独学）`,
+  tags:[`メンズメイク`,`ベースメイク`,`眉毛`,`リップ`,`買い物`],
+},
+{
+  genre:"biyou",
+  title:`俺が男磨き1日目に戻ったら、30日で垢抜けるプランはこれです。`,
+  url:`https://youtu.be/S3p6GjSbYJE`,
+  channel:`Taishi`, duration:`31分`, date:`2026-07-22`,
+  one:`30万円と全時間を投じて1ヶ月で外見を変える4ステップ＋おまけ`,
+  points:[
+    `Step0 気合いでお金を貯める: 話者は約30万円を確保（視聴者には勧めない方法）。Netflix解約・不用品売却等も`,
+    `Step1 全ての土台: 減量・筋トレ（1.5〜2時間）・ヘアケア・スキンケア・メンズメイク練習・姿勢改善を1日目から`,
+    `Step2 顔への投資（2週目に契約）: 二重埋没約20万円、アートメイク4〜5万円、髭脱毛16万円5年、歯列矯正100万円以上、ホワイトニング`,
+    `Step3 3週目: カリスマ美容師にカット。ヘアセットを1日5回×2週間＝70回練習し、指摘をスプレッドシートに記録`,
+    `Step4 スタイルアップコーデ: アウトソール5cm以上＋インソールで7〜8cm盛る。上半身:下半身＝4:6、頭:肩幅＝1:3`,
+    `1ヶ月の見込み: 減量4kg、肌質・髪質改善、メイク30回でマスター、ヘアセット70回`,
+    `マインド: 「めちゃくちゃやれ」が唯一のコツ。視聴者の99%はやらない`,
+    `概要欄と終盤で審査制の個別面談・専属プロデュースへ誘導`,
+  ],
+  basis:`実体験（自身の変化・施術・費用）。終盤は自身のサービスへの導線`,
+  tags:[`外見磨き`,`美容医療`,`ヘアセット`,`ファッション`,`減量`],
+},
+{
+  genre:"biyou",
+  title:`【買って損なし】Amazonで買うべき垢抜けアイテム15選【超厳選】`,
+  url:`https://youtu.be/XM4HMBnZ3r8`,
+  channel:`美男子ヤノ`, duration:`23分`, date:`2026-09-20`,
+  one:`毎日使う愛用品15点を「第一印象・回復・集中」の3章で紹介`,
+  points:[
+    `第一印象: アタックZERO（部屋干し用）、レノア柔軟剤、VT AZケアクレンジングオイル、ヘアトリートメント類、電動歯ブラシ、ホワイトニング歯磨き粉、リップ3種、身長インソール`,
+    `家を快適にして回復: hetrasディフューザー、ティファールスチームアイロン、お香`,
+    `集中力に投資: 炭酸水（レッドブルをやめたら肌荒れ減）、トリュフ味ナッツ、Bose QuietComfort Ultra`,
+    `締め: 15点合計でもヴィトンのバッグより安い。毎日使うものから順に買う`,
+  ],
+  basis:`実体験（元コスメバイヤーの愛用品。Amazonアソシエイト参加）`,
+  tags:[`買い物`,`日用品`,`ヘアケア`,`口腔ケア`,`香り`],
+},
+{
+  genre:"biyou",
+  title:`1000万投資した僕の結論！夏に絶対やるべき自分磨き10選`,
+  url:`https://youtu.be/iLWoqzZe3N4`,
+  channel:`てる / TERU`, duration:`15分`, date:`2026-08-15`,
+  one:`匂い対策を軸にした夏の身だしなみ10個＋おまけ2個`,
+  points:[
+    `デオナチュレ 薬用ソフトストーンW: 朝シャワー後の乾いた脇に塗ると汗の量も匂いも減る`,
+    `ユニクロ日傘: 涼しい、汗をかかない、紫外線対策。「肌老化の原因の9割が紫外線」`,
+    `カラビナ式ペルチェファン、GATSBYアイスデオドラントボディペーパー`,
+    `眉毛サロン「メリー」30分約5,000円: 顔の印象の4割と言われる`,
+    `Panasonic衣類スチーマー、香水GRENA（会う前に手首・首・お腹へ）`,
+    `DECORTÉ UVコンフォートCC、INNISFREEミネラルパウダー（テカり対策）`,
+    `医療脱毛: 顔は医療一択（美容脱毛は生え戻った）`,
+    `おまけ 筋トレとサウナ: 定期的に汗を出す習慣で匂いが軽減`,
+  ],
+  basis:`実体験（自分磨きに1,000万円以上投資したと主張）。「9割」等の数値は出典なし`,
+  tags:[`夏`,`匂い対策`,`UVケア`,`眉毛`,`脱毛`],
+},
+
+// ===== 班B 筋トレ・脂肪・体力 =====
+{
+  genre:"kintore",
+  title:`【1日5分でOK】体力お化けになる習慣 TOP20`,
+  url:`https://youtu.be/2qZuZIuXgvk`,
+  channel:`Ryuの自己管理室`, duration:`46分`, date:`2026-08-03`,
+  one:`体力は後天的に作れる。器を広げ・穴を塞ぎ・補充する20習慣`,
+  points:[
+    `1時間に1回立ち上がる（座りすぎは現代のタバコ級のリスク）`,
+    `スタンフォード式IAP呼吸（5秒吸って膨らみ保持5〜7秒かけて吐く×5セット）`,
+    `if-thenルール（「歯を磨いたらスクワット10回」等トリガーを先に決める）`,
+    `NSDR（横になって呼吸に意識、10〜20分。副交感神経優位の報告）`,
+    `寝る前1時間のデジタルデトックス、1時間にコップ1杯の水、ベジファースト`,
+    `筋トレ週2〜3回大筋群、スモールウィン日記、朝散歩`,
+    `90分集中→15分休憩のウルトラディアンリズム、タンパク質は体重×1.5g/日`,
+    `昼寝30分以内（NASA研究で26分仮眠→効率34%・注意力54%向上）`,
+    `闇風呂ストレッチ（就寝90分前40〜42℃10分）、シングルタスク`,
+    `毎日同じ時間に起きる、HIIT（バーピー20秒×8セット）、ゾーン2有酸素`,
+    `ラスト5分エクササイズ、没頭（欲望・勝ち筋・進捗の見える化）`,
+    `おまけ: 体力＝器を広げ・穴を塞ぎ・水を補充する3構造。まず1つから`,
+  ],
+  basis:`実体験＋科学的根拠（研究者名・NASA研究・APA報告を引用。論文名は未提示）。後半は自社の無料プログラムへの誘導あり`,
+  tags:[`習慣`,`体力`,`睡眠`,`有酸素`,`回復`],
+},
+{
+  genre:"kintore",
+  title:`【結局これ】皮下脂肪で太る原因と最短で落とす方法`,
+  url:`https://youtu.be/cbkJBVbVmVY`,
+  channel:`片倉岳人/ダイエットの知恵袋`, duration:`12分`, date:`2026-08-07`,
+  one:`皮下脂肪は長期の積み重ね。数字管理・タンパク質・筋トレ・習慣で落とす`,
+  points:[
+    `内臓脂肪は生活習慣を少し変えるだけで落ちやすいが、皮下脂肪は頑固で別アプローチが要る`,
+    `原因: 長期間のカロリーオーバー（脂肪1kg＝7200kcal）、タンパク質不足、運動不足と加齢、太りやすい生活習慣`,
+    `解決1 食事を感覚でなく数字で判断（アプリで記録）`,
+    `解決2 タンパク質は体重×1.6gを最低ライン`,
+    `解決3 筋トレ（有酸素より高強度、部分痩せはしないので全身まんべんなく）`,
+    `解決4 痩せやすいルーティン（朝日・就寝時間固定・毎食タンパク質）。短期集中より続けられる形`,
+    `初心者は習慣切り替えから始める`,
+  ],
+  basis:`トレーナーとしての実体験・一般知識（論文引用なし。7200kcal/kgは通説として提示）`,
+  tags:[`減量`,`皮下脂肪`,`タンパク質`,`筋トレ`,`習慣`],
+},
+{
+  genre:"kintore",
+  title:`ブヨブヨのお腹や太ももの脂肪を確実に減らす方法！`,
+  url:`https://youtu.be/rN9X_A3ftgA`,
+  channel:`ハコジム【フィットネス情報】`, duration:`11分`, date:`2026-08-06`,
+  one:`部分痩せは不可。全身を落とし続け、筋トレで形を作る`,
+  points:[
+    `体脂肪は全身から少しずつ使われるが、部位ごとに落ちる速さが違う（アドレナリン受容体・脂肪細胞数・血流量）`,
+    `性差: 男性はお腹、女性は太もも・お尻につきやすい傾向`,
+    `どこから落ちるかは体温・血圧と同じ自動制御で意思ではコントロール不可`,
+    `気にする部位は相対的に目立つだけ。比べる相手はSNSでなくダイエット前の自分`,
+    `筋トレで部位の脂肪が燃えるは誤り。脂肪を減らす＋筋肉を大きくする2つで形が変わる`,
+    `姿勢崩れで体脂肪以上に出て見える。筋トレは必須`,
+    `怪しいサプリ・クリーム・部分痩せ器具に手を出さず、今やっていることを続ける`,
+  ],
+  basis:`生理学的な仕組みの解説（論文名なし）＋トレーナーの経験談`,
+  tags:[`減量`,`部分痩せ`,`体脂肪`,`筋トレ`,`メンタル`],
+},
+{
+  genre:"kintore",
+  title:`コレやってる人は筋肉つきません`,
+  url:`https://youtu.be/HNSN12Kda20`,
+  channel:`山澤礼明【筋肉チャンネル】`, duration:`12分`, date:`2022-12-18`,
+  one:`追い込み・糖質とタンパク質セット・ビタミン・増量・部位9セットが筋肥大の基本`,
+  points:[
+    `NG1 追い込みが足りない（筋肉はトレーニングがほぼ全て。10回3セットの8〜10回目で歯を食いしばる重量でないと変わらない）`,
+    `NG2 タンパク質と炭水化物を一緒に食べない（インスリンでアミノ酸を運ぶ。毎食セットで1日3〜4回）`,
+    `NG3 ビタミン・ミネラル不足（野菜だけでは足りないのでマルチビタミンを毎食後）`,
+    `NG4 体重が増えない（2〜3ヶ月で体重の10%増が目安。米→マルトデキストリン→脂質→ジャンクの順で調整）`,
+    `NG5 全身法で鍛える（1部位最低9セット必要。全身を1日でやるなら絞るか分割法）`,
+  ],
+  basis:`実体験・トレーナーの持論（論文引用なし。「食事7割」説に反対）`,
+  tags:[`筋トレ`,`筋肥大`,`増量`,`栄養`,`サプリ`],
+},
+{
+  genre:"kintore",
+  title:`有酸素運動は筋トレの邪魔になる？筋トレ効果をムダにしない取り入れ方！`,
+  url:`https://youtu.be/rzE8BBt2LuY`,
+  channel:`ハコジム【フィットネス情報】`, duration:`10分`, date:`2026-08-21`,
+  one:`一般レベルなら有酸素で筋肥大は損なわれない。順番と食事に注意`,
+  points:[
+    `結論: 一般的なフィットネス範囲なら筋トレに有酸素を足しても筋力・パワー・筋肥大の伸びは大きく悪化しない`,
+    `根拠1 2026年アンブレラレビュー（17件メタ分析・144研究・1492人）で明確な差なし`,
+    `根拠2 2021年43研究メタ分析では瞬発力の伸びだけ少し小さくなる傾向`,
+    `2013年の研究（レッグプレス単独 vs 直後サイクリング）: mTORC1・S6K1は差なし、AMPKは両条件同じ`,
+    `取り入れ方: 同じ日なら筋トレを先に／可能なら3時間以上離す／食事を減らしすぎない／重量が落ちるなら有酸素を減らす`,
+  ],
+  basis:`科学的根拠（概要欄にSpringer 2026アンブレラレビュー・PubMed 2021メタ分析・AJP Endocrinol Metab 2013の3件のリンク）`,
+  tags:[`有酸素`,`筋トレ`,`筋肥大`,`研究`,`干渉効果`],
+},
+
+// ===== 班C 習慣・生産性・時間 =====
+{
+  genre:"shukan",
+  title:`誰でも早起きができるようになる習慣 TOP20`,
+  url:`https://youtu.be/Nsp7TDaNaHA`,
+  channel:`Ryuの自己管理室`, duration:`39分`, date:`2026-08-15`,
+  one:`早起きは意志でなく仕組み。20習慣を掛け合わせ確率を上げる`,
+  points:[
+    `寝る前に「朝5時に起きる」と5回唱える、起きて10秒以内に目薬、1日1分のチェック、カーテンを開けて寝る`,
+    `寝る前に明日のToDo3つ、起きたらコップ1杯の水、夜7時以降は白い電気を消す`,
+    `夜食と寝酒をやめる、寝る90分前にお風呂（40〜41℃10分）、昼寝パワーナップ（NASA研究で効率34%向上）`,
+    `歯磨き中に翌朝のイメトレ、コーヒーは午後2時まで、冷水シャワー（ノルアドレナリン530%増の研究）`,
+    `寝室をスマホ禁止エリアに、3秒ルール（目覚めたら3秒で起きる）、プラス1時間ルール（週1回まで寝坊OK）`,
+    `夜の予定にノー、朝散歩（セロトニン）、人との約束（1位。自分との約束は守れない）`,
+    `締め: 20個から3つに絞って始める`,
+  ],
+  basis:`実体験＋研究引用（NASA昼寝、西野精治、ヒューバーマン等）。論文名の特定はなし`,
+  tags:[`早起き`,`睡眠`,`習慣化`,`体内時計`,`ランキング`],
+},
+{
+  genre:"shukan",
+  title:`【科学が証明】1日が48時間になる。ダラダラ癖が消える超生産性12の習慣`,
+  url:`https://youtu.be/jCIi67WeSW4`,
+  channel:`人生逆転の習慣`, duration:`32分`, date:`2025-12-06`,
+  one:`集中・捨てる・環境・儀式の12習慣で時間の「密度」を上げる`,
+  points:[
+    `90分の深集中ゾーン（中断されると戻るのに23分かかる）`,
+    `スマホを物理的に視界から消す（あるだけで生産性30〜40%低下）`,
+    `頭の中のタスクを全て書き出す（GTD「脳は思考の器」）、2分で終わる用事はその場で片付ける`,
+    `成果に直結する20%だけに集中（パレートの法則）、優先度の低い80%は捨てる`,
+    `1日の最初に最も嫌なことを終わらせる（『カエルを食べろ』）`,
+    `行動しやすい環境を先に整える（『アトミック・ハビッツ』）、取りかかりやすさを上げる、5分だけの助走時間`,
+    `単純作業は聞き流しで進める、儀式化したルーティン（通常の習慣より約2.5倍継続）`,
+  ],
+  basis:`書籍（GTD、カエルを食べろ、アトミック・ハビッツ）の引用が多いが論文名・数字の出典は不明。実体験の語りなし`,
+  tags:[`生産性`,`集中力`,`習慣化`,`環境設計`,`時間管理`],
+},
+{
+  genre:"shukan",
+  title:`【成功保証】ドパ漬けゴミ廃人が１から１００まで俺の言う通りにして今から７２時間で人生を取り戻す方法｜完全ガイド`,
+  url:`https://youtu.be/lOeth5S74V4`,
+  channel:`ジョージ -メンズコーチ-`, duration:`52分`, date:`2026-07-09`,
+  one:`掃除→紙の目標→2時間早寝→トリガー排除→肉300g卵5個の5ステップ`,
+  points:[
+    `ステップ0 今日は諦める: 動画を見た日は準備に振り切る`,
+    `ステップ1 環境のオーガナイズ: 寝具を替える、部屋のゴミを全部捨てる、掃除中は瞑想のつもりで`,
+    `ステップ2 紙とペン: 大目標1つ→月の行動目標（数字で）→7日分の週予定。やったら線を引いて褒める`,
+    `ステップ3 睡眠: 今夜から2時間早く寝起きし2〜3日かけて目標リズムへ。スマホを寝室に持ち込まない`,
+    `ステップ4 悪習慣トリガーの排除: SNS・ショート・ゲームをアンインストール`,
+    `ステップ5 食事: 肉か魚300g以上＋卵5個を守ればジャンク以外は何を食べてもよい`,
+    `まとめ: 5つを1〜2週間言われた通りにやれ。変わらなければ諦めればいい`,
+  ],
+  basis:`実体験（自身が何度もこの方法で立ち直り、人にもやらせた）。科学的根拠や研究の引用はなし`,
+  tags:[`ドーパミン`,`生活リズム`,`スマホ依存`,`目標設定`,`食事`],
+},
+{
+  genre:"shukan",
+  title:`なぜ予定が一つあるだけで、休日は一日つぶれた気がするのか【時間心理学】`,
+  url:`https://youtu.be/KMNJQ5FLqqE`,
+  channel:`眠れる知識室`, duration:`13分`, date:`2026-08-15`,
+  one:`予定は手前の時間を「待ち時間」に変える。消えたのは余裕`,
+  points:[
+    `実験1: 予定がある人ほど手前の読書時間の見積もりが約10分縮む`,
+    `実験2: 1時間後に予定がある人ほど「報酬は高いが45分かかる仕事」を選ばない`,
+    `実験3: 予定があると区切れない映画の方が大きく避けられる`,
+    `予定直前の時間はさらに短く感じる。時刻を決めると楽しい予定も仕事っぽくなる`,
+    `2026年発表の研究: 会議中止で戻った1時間は最初から空いていた1時間より長く感じる`,
+    `工夫: 予定を近い時間にまとめる／「何時間使えるか」で捉える／途中で止めても完了と言える単位に分ける`,
+    `結論: 消えたのは休日ではなく「今から始めてもいいと思える余裕」`,
+  ],
+  basis:`科学的根拠（Tonietto, Malkoc & Nowlis 2019／Tonietto & Malkoc 2016／Tonietto et al. 2026の論文解説。VOICEVOX朗読）`,
+  tags:[`時間心理学`,`休日`,`予定管理`,`先延ばし`,`論文解説`],
+},
+{
+  genre:"shukan",
+  title:`その「12時間勉強、達成！」は逃げ。俺が、その証拠や。【全落ち→早稲田6冠の勉強記録法】`,
+  url:`https://youtu.be/Orvg5jPtKEU`,
+  channel:`1パーセント受験戦略`, duration:`24分`, date:`2026-08-14`,
+  one:`勉強時間でなく「今日崩れたところ」だけを毎晩記録する`,
+  points:[
+    `実体験: 現役時は勉強時間で競い全落ち。浪人では時間カウントを捨て紙の手帳だけで早慶6学部に全勝`,
+    `「自己確定の法則」: 勉強時間は目的でなく結果。合格者の時間は後から測った筋`,
+    `真実性の錯覚（1977年の実験）: 「何回聞いたか」を「本当か」と取り違える`,
+    `害①承認は即金・合格は半年後なので脳が数字が伸びる方へ歪む`,
+    `害②他人の12時間を見ると自分のやり切った日も削られる`,
+    `害③「12分の穴」: 残り時間を埋める勉強は頭を使わない。1日12分＝年73時間`,
+    `記録法「今日のコラプス」: 勉強時間は書かず、寝る前に今日崩れたところだけ書く`,
+    `A（12時間勉強でD判定）とB（6時間20分で崩れを記録しC判定→合格）の対比`,
+    `捨てて失敗した話: ジムを解約してランニングに切り替えたら成績がさらに落ちた。何がノイズで何がエンジンかは外から分からない`,
+  ],
+  basis:`実体験が主（全落ち→早慶6学部全勝）。真実性の錯覚は1977年の実験として言及（研究者名なし）`,
+  tags:[`勉強法`,`受験`,`記録術`,`振り返り`,`勉強時間`],
+},
+{
+  genre:"shukan",
+  title:`全部やった｜仕事・簿記・TOEIC・副業こなしたIT社員の朝活vlog #149`,
+  url:`https://youtu.be/BboQubdydC4`,
+  channel:`ryo vlog -社会人の朝活-`, duration:`16分`, date:`2026-06-29`,
+  one:`28歳IT社員の1週間の朝活記録。字幕本文は取得できていない`,
+  points:[
+    `注意: このファイルの字幕テキストは空（メタデータと見出し行のみ）。以下は概要欄の情報のみ`,
+    `投稿者: TOEIC600点・フルマラソン完走・独立／フリーランスを目指す28歳IT社員`,
+    `今週: 勉強350分（TOEIC・AI・簿記）、ランニング5km、読書1冊、動画編集390分`,
+    `告知: 1ヶ月の朝活伴走サービスをモニター3名限定で募集`,
+  ],
+  basis:`実体験（vlog）。字幕が無いため動画内の発言は確認できず`,
+  tags:[`朝活`,`vlog`,`社会人学習`,`TOEIC`,`簿記`],
+},
+
+// ===== 班D 考え方・メンタル・キャリア =====
+{
+  genre:"mind",
+  title:`”自信” に頼るな。拒絶されろ。好かれようとするな、”普通” に振る舞え`,
+  url:`https://youtu.be/4hoadfzhbaA`,
+  channel:`ジョージ -メンズコーチ-`, duration:`約20分`, date:`2026-02-23`,
+  one:`自信は不要。「よく見られよう」の演技を捨てて等身大でいれば緊張は消える`,
+  points:[
+    `自信のなさは自分で作り出している。家で一人の「普通」の状態で人前に出ればいい`,
+    `不安・緊張の源は「よく見られたい」というパフォーマンス（演技）をしようとしていること`,
+    `等身大では足りないと思い鎧を着る。鎧がバレるのが怖いから失敗を過剰に恐れる`,
+    `親友の前で緊張しないのは「等身大でいてよい」と許可しているから`,
+    `拒絶・失敗・嫌われることを受け入れる勇気を持て`,
+    `他人の評価に依存しすぎ。「嫌なことは嫌と言う」のがモテる男の普通運行`,
+    `100人いれば1人に響けばいい。全員から好かれようとしなくてよい`,
+    `末尾は自身のコミュ力自信マスターコース（30日ステップ）の宣伝`,
+  ],
+  basis:`実体験（元・対人恐怖症・赤面症というコーチ自身の経験）＋持論。調査・研究の引用なし`,
+  tags:[`マインド`,`対人関係`,`自信`,`コミュニケーション`,`恋愛`],
+},
+{
+  genre:"mind",
+  title:`20代で手放すべき考え方`,
+  url:`https://youtu.be/iJNV_bDrHts`,
+  channel:`エママインド`, duration:`約37分`, date:`2026-07-25`,
+  one:`20代で捨てるべき思い込み10個。比較・心理ゲーム・環境依存・他責を手放せ`,
+  points:[
+    `タイミングは人それぞれ。比較を加速させるSNSは見なくていい`,
+    `恋愛は見切る勇気。相手の「ポテンシャル」でなく「行動パターン」を見る`,
+    `心理ゲームに走らない。本質は相手を知り思いやりで育てること`,
+    `特別な存在になる期待を手放す。日常に特別を見つけられる人が特別`,
+    `辛い出来事は人生の軌道修正。終わりではない`,
+    `他人がどう思うかはコントロールできない`,
+    `努力は方向性が大切。過程での人格形成が醍醐味`,
+    `環境が変われば自分が変わるのは逆。自分が変わるから環境が変わる`,
+    `他人のせいで何々できない、を手放す`,
+    `幸せ＝問題が一つもない状態ではない。打たれても戻る速さが本当の自信`,
+    `途中にCBDオイルのPRと自身の1on1プログラムの宣伝が入る`,
+  ],
+  basis:`実体験（自身の20代前半の恋愛の失敗）＋持論。研究の引用は無く宗教的視点も含む`,
+  tags:[`マインド`,`20代`,`恋愛`,`比較`,`他責`],
+},
+{
+  genre:"mind",
+  title:`20代で知らなかったせいで後悔した7つのこと🥲【健常者を目指して】`,
+  url:`https://youtu.be/huavtDvRSco`,
+  channel:`コスメティック田中`, duration:`約18分`, date:`2026-09-25`,
+  one:`30歳になった投稿者の振り返り7つ。意味を疑わずやる・普通の価値・運動`,
+  points:[
+    `「意味あるの?」と考えすぎなくてよかった。全力を出せる気力がある期間は短い`,
+    `人生を絞りすぎなくてよかった。自己決定感が強いほど幸福度が高いという研究に触れる`,
+    `挨拶を軽く見なければよかった。「敵じゃない」と伝わるだけでデメリットがない`,
+    `海外にもっと早く行ってもよかった。英語は適当でもいける`,
+    `普通の価値を低く見積もっていた。逆張りは「自分を証明しないといけない」感を抱える`,
+    `投資で1〜2年前に大きな金額を失った。「負けちゃいけない」が弱かった`,
+    `運動しておけばよかった。体力維持より気づきが得られ仕事のパフォーマンスにも影響`,
+    `補足: 自己管理は今も苦戦中。やる気依存のモチベ型になっている`,
+  ],
+  basis:`実体験（自身の30年の振り返り）。幸福度と自己決定感の研究に一言触れるが出典名は無し`,
+  tags:[`20代`,`キャリア`,`振り返り`,`習慣`,`投資`],
+},
+{
+  genre:"mind",
+  title:`変化が見えた瞬間、お前は努力に依存する`,
+  url:`https://youtu.be/Ihrd679TTX0`,
+  channel:`ジョージ -メンズコーチ-`, duration:`約18分`, date:`2025-11-11`,
+  one:`努力が続くのは「気持ちいい」から。微細な変化を勝利として噛みしめろ`,
+  points:[
+    `毎日繰り返す行動は気持ちいいから続く。努力が3日で終わるのは気持ちよさを感じていないから`,
+    `気持ちよさは結果から来る。得意不得意は遺伝子・個人差で仕方ない`,
+    `実体験: 筋トレ未経験の友人が1か月で自分より大きくなったのを見て続けられた`,
+    `不得意な分野で続ける唯一の方法は「変化が見えるまでやる」＋「微細な変化を見逃さない」`,
+    `他人と比べず、前よりいいサムネ、前よりいいフォームに注意を払う`,
+    `無理やりでも言い聞かせろ。「パンプ気持ちいい」「ナイス自分」`,
+    `自身がAmazon総合1位を取れたのは5年間微細な勝利を積み上げたから`,
+    `続ければコンパウンドエフェクトで100再生が10万再生になる`,
+    `末尾はPatreonとコースの宣伝`,
+  ],
+  basis:`実体験（友人の筋トレ、自身の5年間のYouTubeと書籍1位）＋持論。研究の引用なし`,
+  tags:[`マインド`,`習慣`,`継続`,`努力`,`筋トレ`],
+},
+{
+  genre:"mind",
+  title:`エリート集団”コンサル”で本当に評価される人の正体`,
+  url:`https://youtu.be/tLVDTOuqpJE`,
+  channel:`コンサルのリアルch`, duration:`約8分`, date:`2025-12-20`,
+  one:`コンサルのハイパフォーマーの5特徴を、アニメ形式の1日で描く`,
+  points:[
+    `最優秀層は入社4年26歳でマネージャー、入社10年32歳でパートナー`,
+    `(1)チャーム: やる気・人当たり・素直さが評価の重要な素地`,
+    `(2)目的へのフォーカス: 資料作成は手段。クライアントの御用聞きになるな`,
+    `(3)事前想定: 会議前にメモしておき終了と同時に議事録を送る`,
+    `(4)仮説思考（デイゼロ仮説）: 初日から結論の仮説を置き、新事実で修正する`,
+    `(5)オーナーシップ: ギリギリまでアウトプットにこだわる`,
+    `まとめ: 1つ1つは当たり前だが全部高水準で備える人は稀。事業会社にも共通`,
+  ],
+  basis:`業界経験に基づく一般論（匿名のアニメ形式）。年収・昇進年次の数字に出典なし`,
+  tags:[`キャリア`,`コンサル`,`仕事術`,`評価`,`仮説思考`],
+},
+{
+  genre:"mind",
+  title:`【男性必見】男が一度は疑問に思う女の心理を解明します🤫`,
+  url:`https://youtu.be/GTs-eE3Yvkk`,
+  channel:`HARE's diary`, duration:`約18分`, date:`2026-08-08`,
+  one:`男性視聴者の恋愛相談10件を「付き合える／まだ待て」で判定（女性目線）`,
+  points:[
+    `毎回割り勘でいい → まだ待て。LINEが向こうから来る等があれば脈あり`,
+    `予定を聞くが自分から誘わない → まだ待て、だが男性から誘えば進む`,
+    `週1で会うが恋愛の匂わせがない → 付き合う方向でGO`,
+    `好きと言うが彼氏がいる → まだ待て。本気なら既に別れているはず`,
+    `ストーリーに毎回即いいね → まだ待て。本気なら細かいコメントやDMがある`,
+    `夜中に「寂しい」とLINE → キープ。昼や朝の連絡で見分ける`,
+    `告白後「今は考えられない」だが連絡は続く → まだ待て。待つ期限を自分で決める`,
+    `マッチングアプリで「次いつ?」と聞かれる → 付き合っていい（スタンフォード研究引用）`,
+  ],
+  basis:`配信者の女性目線の経験＋心理学用語＋スタンフォード大学の研究への言及（出典名なし）`,
+  tags:[`恋愛`,`対人関係`,`女性心理`,`マッチングアプリ`,`20代`],
+},
+
+// ===== 班E AI・Claude・副業・お金・買い物 =====
+{
+  genre:"ai",
+  title:`【AIを社員に】Claude Code Agent Teamsで1人起業する方法を解説します【Claude Opus 4.6】`,
+  url:`https://youtu.be/6u-euXGNl-o`,
+  channel:`Shin Coding Tutorial`, duration:`33分`, date:`2026-02-17`,
+  one:`Agent Teamsで市場調査→事業計画→LP/MVPまで実演。鍵は集客`,
+  points:[
+    `Agent Teams＝複数のClaudeに企画・市場調査・開発・マーケの役割を与えて並行で議論させる機能`,
+    `トークン消費が多く$200（Max）プランへ移行。人を雇う月20〜30万に対しAIは約3万円`,
+    `実演1: マイクロビジネスのアイデア出しを音声入力→8分で3案、ネット検索で裏付け`,
+    `実演2: 事業計画書を7分で作成、draw.io MCPで図解`,
+    `実演3: LP＋MVP（Next.js 15）を6分25秒で生成`,
+    `主張: 開発は誰でもできる、マーケティングが一番大事。1つに絞って数ヶ月`,
+    `情報商材への注意喚起をしつつ、自身の講座・書籍も案内`,
+  ],
+  basis:`実演＋実体験。自分のサムネAIで「月7.5万円」（売上か利益か不明）。「月10〜20万」は未達成の試算`,
+  tags:[`Claude Code`,`Agent Teams`,`1人起業`,`MVP開発`,`マーケティング`],
+},
+{
+  genre:"ai",
+  title:`【これも無料！？】最新版Claudeの激ヤバ無料機能8選`,
+  url:`https://youtu.be/qSUemDZWDN8`,
+  channel:`トモミツの即実践AI活用術ch`, duration:`23分`, date:`2026-06-05`,
+  one:`Claude無料プランの8機能を実演し、課金すべき人の条件を整理`,
+  points:[
+    `①アーティファクト: アプリ・グラフが数十秒で出る`,
+    `②コネクター: Gmail・カレンダー・Slack等300以上と連携し下書き保存まで自動`,
+    `③ファイル・画像・URL読込: PDF・Excel・ホワイトボード写真から要点抽出`,
+    `④ファイル作成: Word/Excel/PowerPoint/PDFを本物の形式で出力（2026年2月から無料で可）`,
+    `⑤スキル登録 ⑥Web検索（引用元明示） ⑦プロジェクト ⑧会話コンパクション`,
+    `無料の限界: 使用量制限・モデル制限（Opusは課金のみ）・規約（副業利用はPro/Max推奨）`,
+    `推奨: 無料で1〜2週間本気で使い、限界を感じたら課金`,
+  ],
+  basis:`実演（画面操作）。収益主張なし。公式LINE・法人研修へ誘導`,
+  tags:[`Claude`,`無料プラン`,`アーティファクト`,`コネクター`,`ファイル作成`],
+},
+{
+  genre:"ai",
+  title:`【最新】Claude Codeを使って月30万を狙える副業TOP3【AI副業を実演】`,
+  url:`https://youtu.be/aU4BvO8N7_0`,
+  channel:`むっちょの副業月5万攻略`, duration:`26分`, date:`2026-08-13`,
+  one:`TikTokアフィ・AI秘書・YouTubeマーケをClaude Codeで。計算上の月30万`,
+  points:[
+    `Claude Codeは自律して進める「秘書」。副業時間月60時間の上限から時給5000円が必要と計算`,
+    `第3位 TikTokアフィリエイト: 高単価・無料成果発生・競合ありの3条件で案件選定。文字起こしツールを自作`,
+    `第2位 AI駆動のオンライン秘書: クラウドワークスの文字起こし案件をツールで巻き取り時給6000円`,
+    `第1位 YouTubeマーケティング: 自分の商品をYouTube経由で売る。台本・カスタマーサポートもAIで`,
+    `何から始めるか: 動画編集を3ヶ月やって0→1の経験を作る`,
+    `誘導: 公式LINEで勉強会＋特典`,
+  ],
+  basis:`実演（文字起こしツール・歌動画制作）＋自分の資料作成の実体験。「月30万」は時給×時間の計算で達成者の実績は不明`,
+  tags:[`Claude Code`,`AI副業`,`TikTokアフィリエイト`,`クラウドワークス`,`YouTubeマーケティング`],
+},
+{
+  genre:"ai",
+  title:`AI使って月30万や100万稼ぐ人はどんな仕事をしてる？トッププレイヤーが解説するで`,
+  url:`https://youtu.be/QqRnbOoUGJ8`,
+  channel:`AI仙人【AI歴10年・ガチADHD男】`, duration:`47分`, date:`2026-03-27`,
+  one:`スキル売りの応募競争を降り、目の前の人の課題をAIで解け`,
+  points:[
+    `スキル編ロードマップ: 1〜10万円（スプシ自動化等）、30万円（プログラマー等）、50〜100万円（AIエージェント構築等）`,
+    `「AI脳」: よくある事故パターンを事前にAIに聞き、条件をClaude Codeに食わせておけるかが食えるかの境目`,
+    `スキル重視の罠: ネット応募は全員が同じ検索語で殺到し儲からない`,
+    `リアル戦略: 「目の前の人を幸せにする」。報酬はスキルでなく時間・課題解決・売上に払われる`,
+    `単価の上げ方: 同じ作業でも予算のある相手なら上がる`,
+    `「AIを使っていることは基本言わない」。聞かれたらAIコンサルや自作ツールへつなげる`,
+    `誘導: LINE勉強会、法人向け連絡先`,
+  ],
+  basis:`本人の受注経験と知人の実績の語り。画面実演なし。「月100万」「月200万」は証拠提示なし`,
+  tags:[`AI副業`,`営業戦略`,`Claude Code`,`Google Workspace自動化`,`単価交渉`],
+},
+{
+  genre:"ai",
+  title:`今すぐやめるべきお金の無駄 TOP20`,
+  url:`https://youtu.be/-NVSiI8k0ZA`,
+  channel:`ブレイクスルー佐々木`, duration:`15分`, date:`2026-09-30`,
+  one:`物価高対策の節約20項目。第2位の中にFCNTスマホのPRを組込`,
+  points:[
+    `コンビニでの買い物、使わない専用調理器具、なんとなくつける延長保証、使っていないサブスク`,
+    `見栄のためのブランド品、ホテルの不必要なグレードアップ、習慣的な酒・タバコ、ハイエンド家電`,
+    `ATM・振込手数料、スマホ料金プラン（格安SIMで年約8万節約）、行っていないジムの月料金`,
+    `保険ほぼ全て（高額療養費制度の説明）、車の所有、見栄のための高層階、手数料の高い投資商品`,
+    `株やFXの頻繁な売買（最頻売買層のリターンは市場全体より低い）、宝くじ・ギャンブル`,
+    `お金を銀行に眠らせる（MSCI ACWI年率9.72%で月5万×40年が約2億5700万に）`,
+    `必要以上に高いスマホ（arrows Alpha2のPR組込）`,
+    `1位 リボ払いなど高金利の借金放置（100万を月2万返済で完済まで約7年、総額約186万円）`,
+  ],
+  basis:`調査・研究の引用（ジム775人、6.6万世帯、MSCI指数）＋自分の格安SIM体験。第2位はFCNT提供のPR`,
+  tags:[`節約`,`家計`,`投資`,`保険`,`PR`],
+},
+{
+  genre:"ai",
+  title:`5,000円以下で生活がガチで捗る神アイテム TOP20`,
+  url:`https://youtu.be/hg9_k86GiZ8`,
+  channel:`ブレイクスルー佐々木`, duration:`12分`, date:`2026-08-18`,
+  one:`5000円以下の便利グッズ20選。第2位はGensparkのPR（5000円超）`,
+  points:[
+    `無印良品の衣類クリーナー・ハンディファン、ニトリのキッチンスポンジ、マーナの冷凍ごはん容器`,
+    `ラッセルホブス充電式ミル、Creative Pebble V3、MAWAアーチ型ハンガー、サーモス真空断熱マグ`,
+    `YOKELLMUX壁掛けフック、ロジクールPebble Mouse 2、キングジムBoogie Board`,
+    `Anker充電器・モバイルバッテリー、Loop Quiet 2耳栓、MOFTスマホスタンド`,
+    `Eufy SmartTrack Link（置き忘れ通知）、1Password`,
+    `2位 Genspark セカンドブレインノート（約29,000円「5000円以下ではない」と本人が明言。PR）`,
+    `1位 SwitchBotプラグミニ（約2000円、既存家電をスマホから遠隔操作）`,
+  ],
+  basis:`自分の使用体験の紹介。第2位はGenspark提供のPR、概要欄リンクはAmazonアフィリエイト`,
+  tags:[`ガジェット`,`買い物`,`便利グッズ`,`Genspark`,`PR`],
+},
+{
+  genre:"ai",
+  title:`【買って良かったもの総まとめ】美容、暮らし、ガジェット、私のベストバイを熱く語るわな🛍️`,
+  url:`https://youtu.be/Np6-j9dHMVE`,
+  channel:`みたらしの日常`, duration:`11分`, date:`2026-09-26`,
+  one:`20代女性Vlogの2026年上半期ベストバイ7点`,
+  points:[
+    `Ankerモバイルバッテリー（30W、USB-A＋USB-C×2で2台同時充電）`,
+    `メディキューブ ブースターX2（美顔器、6モード）`,
+    `美容液3本（夜はセンテラアンプル＋ビタミンCセラム、朝はペプチドセラム）`,
+    `JINSチークレンズの眼鏡（レンズ下部がピンクのグラデーション）`,
+    `3COINSの畳める収納ボックス、Francfrancタンブラー、電動歯ブラシ`,
+  ],
+  basis:`実体験（自分で購入・毎日使用）。収益主張なし。商材誘導なし`,
+  tags:[`ベストバイ`,`美容`,`ガジェット`,`暮らし`,`Vlog`],
+},
+];
+
+function genreMeta(key){ return GENRES.find(g=>g.key===key); }
+
+const chipsEl = document.getElementById("chips");
+const allChip = document.createElement("div");
+allChip.className = "chip";
+allChip.dataset.active = "1";
+allChip.textContent = `すべて (${VIDEOS.length})`;
+allChip.dataset.key = "all";
+chipsEl.appendChild(allChip);
+
+GENRES.forEach(g=>{
+  const n = VIDEOS.filter(v=>v.genre===g.key).length;
+  const el = document.createElement("div");
+  el.className = "chip";
+  el.textContent = `${g.label} (${n})`;
+  el.dataset.key = g.key;
+  chipsEl.appendChild(el);
+});
+
+let activeGenre = "all";
+chipsEl.addEventListener("click", (e)=>{
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  activeGenre = chip.dataset.key;
+  [...chipsEl.children].forEach(c=>c.dataset.active = (c===chip)?"1":"0");
+  render();
+});
+
+const qInput = document.getElementById("q");
+qInput.addEventListener("input", render);
+
+function matchesQuery(v, q){
+  if(!q) return true;
+  const hay = [v.title, v.channel, v.one, ...v.tags].join(" ").toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function render(){
+  const q = qInput.value.trim();
+  const list = VIDEOS.filter(v=>{
+    const genreOk = (activeGenre === "all") || (v.genre === activeGenre);
+    return genreOk && matchesQuery(v, q);
+  });
+
+  document.getElementById("countRow").textContent = `${list.length}本 表示中（全${VIDEOS.length}本）`;
+
+  const main = document.getElementById("main");
+  const emptyEl = document.getElementById("empty");
+  main.innerHTML = "";
+
+  if(list.length === 0){
+    emptyEl.hidden = false;
+    return;
+  }
+  emptyEl.hidden = true;
+
+  list.forEach(v=>{
+    const gm = genreMeta(v.genre);
+    const card = document.createElement("details");
+    card.className = "card";
+
+    const summary = document.createElement("summary");
+    summary.innerHTML = `
+      <div class="row-top">
+        <div style="flex:1;min-width:0;">
+          <span class="genre-chip" style="background:var(${gm.varname})">${gm.label}</span>
+          <h3>${escapeHtml(v.title)}</h3>
+          <div class="meta">${escapeHtml(v.channel)} ・ ${escapeHtml(v.duration)} ・ ${escapeHtml(v.date)}</div>
+          <div class="oneline serif">${escapeHtml(v.one)}</div>
+        </div>
+        <div class="arrow">▾</div>
+      </div>
+    `;
+    card.appendChild(summary);
+
+    const detail = document.createElement("div");
+    detail.className = "detail";
+
+    const h4pts = document.createElement("h4");
+    h4pts.textContent = "要点";
+    detail.appendChild(h4pts);
+    const ul = document.createElement("ul");
+    v.points.forEach(p=>{
+      const li = document.createElement("li");
+      li.textContent = p;
+      ul.appendChild(li);
+    });
+    detail.appendChild(ul);
+
+    const h4basis = document.createElement("h4");
+    h4basis.textContent = "動画の主張の根拠";
+    detail.appendChild(h4basis);
+    const basisDiv = document.createElement("div");
+    basisDiv.className = "basis";
+    basisDiv.textContent = v.basis;
+    detail.appendChild(basisDiv);
+
+    const tagsDiv = document.createElement("div");
+    tagsDiv.className = "tags";
+    v.tags.forEach(t=>{
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = t;
+      tagsDiv.appendChild(span);
+    });
+    detail.appendChild(tagsDiv);
+
+    const a = document.createElement("a");
+    a.className = "link";
+    a.href = v.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "YouTubeで見る ↗";
+    detail.appendChild(a);
+
+    card.appendChild(detail);
+    main.appendChild(card);
+  });
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+render();
+</script>
+</body>
+</html>
