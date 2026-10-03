@@ -244,6 +244,103 @@ main{padding-bottom:40px;}
   padding:50px 10px;
   font-size:.9rem;
 }
+.status-bar{
+  display:flex;
+  justify-content:flex-end;
+  padding-top:6px;
+}
+.toggle-btn{
+  background:none;
+  border:none;
+  color:var(--accent);
+  font-size:.78rem;
+  cursor:pointer;
+  padding:4px 2px;
+}
+.toggle-btn.active{
+  font-weight:700;
+  text-decoration:underline;
+}
+.badge{
+  display:inline-block;
+  font-size:.68rem;
+  padding:2px 8px;
+  border-radius:999px;
+  margin-left:6px;
+  margin-bottom:6px;
+  font-weight:600;
+}
+.badge-keep{
+  background:var(--accent);
+  color:var(--accent-text);
+}
+.badge-discard{
+  background:var(--surface-2);
+  color:var(--text-muted);
+}
+.action-row{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+}
+.action-btn{
+  flex:1;
+  padding:10px 0;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  font-size:.85rem;
+  font-weight:600;
+  cursor:pointer;
+}
+.action-btn.keep.active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+}
+.action-btn.discard.active{
+  background:var(--surface-2);
+  color:var(--text-muted);
+}
+.toast{
+  position:fixed;
+  left:16px;
+  right:16px;
+  bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  max-width:688px;
+  margin-inline:auto;
+  background:var(--text);
+  color:var(--bg);
+  border-radius:12px;
+  padding:12px 16px;
+  font-size:.85rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+  z-index:50;
+  opacity:0;
+  transform:translateY(10px);
+  transition:opacity .2s, transform .2s;
+  pointer-events:none;
+}
+.toast.show{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+.toast button{
+  background:none;
+  border:none;
+  color:var(--bg);
+  font-weight:700;
+  text-decoration:underline;
+  cursor:pointer;
+  font-size:.85rem;
+  flex:0 0 auto;
+}
 .footer-note{
   text-align:center;
   color:var(--text-muted);
@@ -262,11 +359,15 @@ main{padding-bottom:40px;}
   </div>
   <div class="chips" id="chips"></div>
   <div class="count-row" id="countRow"></div>
+  <div class="status-bar">
+    <button class="toggle-btn" id="toggleDiscarded">消した分を見る (<span id="discardedCount">0</span>)</button>
+  </div>
 </header>
 
 <main id="main"></main>
 <div class="empty" id="empty" hidden>該当する動画が見つかりません</div>
 <p class="footer-note">くりまん製・動画が増えたらここに追記していきます</p>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">元に戻す</button></div>
 
 <script>
 const GENRES = [
@@ -846,6 +947,47 @@ const VIDEOS = [
 },
 ];
 
+const STATUS_KEY = "video-notes-status-v1";
+function loadStatusMap(){
+  try{
+    return JSON.parse(localStorage.getItem(STATUS_KEY) || "{}");
+  }catch(e){
+    return {};
+  }
+}
+function saveStatusMap(map){
+  try{
+    localStorage.setItem(STATUS_KEY, JSON.stringify(map));
+  }catch(e){}
+}
+let statusMap = loadStatusMap();
+let showDiscarded = false;
+
+function setVideoStatus(url, status){
+  if(status === undefined){
+    delete statusMap[url];
+  }else{
+    statusMap[url] = status;
+  }
+  saveStatusMap(statusMap);
+}
+
+let toastTimer = null;
+function showToast(message, onUndo){
+  const toast = document.getElementById("toast");
+  const msg = document.getElementById("toastMsg");
+  const undoBtn = document.getElementById("toastUndo");
+  msg.textContent = message;
+  undoBtn.onclick = () => {
+    onUndo();
+    toast.classList.remove("show");
+    render();
+  };
+  toast.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 4000);
+}
+
 function genreMeta(key){ return GENRES.find(g=>g.key===key); }
 
 const chipsEl = document.getElementById("chips");
@@ -877,6 +1019,13 @@ chipsEl.addEventListener("click", (e)=>{
 const qInput = document.getElementById("q");
 qInput.addEventListener("input", render);
 
+const toggleBtn = document.getElementById("toggleDiscarded");
+toggleBtn.addEventListener("click", ()=>{
+  showDiscarded = !showDiscarded;
+  toggleBtn.classList.toggle("active", showDiscarded);
+  render();
+});
+
 function matchesQuery(v, q){
   if(!q) return true;
   const hay = [v.title, v.channel, v.one, ...v.tags].join(" ").toLowerCase();
@@ -885,10 +1034,15 @@ function matchesQuery(v, q){
 
 function render(){
   const q = qInput.value.trim();
-  const list = VIDEOS.filter(v=>{
+  const genreFiltered = VIDEOS.filter(v=>{
     const genreOk = (activeGenre === "all") || (v.genre === activeGenre);
     return genreOk && matchesQuery(v, q);
   });
+
+  const discardedTotal = VIDEOS.filter(v => statusMap[v.url] === "discarded").length;
+  document.getElementById("discardedCount").textContent = discardedTotal;
+
+  const list = genreFiltered.filter(v => showDiscarded || statusMap[v.url] !== "discarded");
 
   document.getElementById("countRow").textContent = `${list.length}本 表示中（全${VIDEOS.length}本）`;
 
@@ -904,14 +1058,22 @@ function render(){
 
   list.forEach(v=>{
     const gm = genreMeta(v.genre);
+    const status = statusMap[v.url];
     const card = document.createElement("details");
     card.className = "card";
+    if(status === "discarded") card.classList.add("is-discarded");
+
+    const badgeHtml = status === "keep"
+      ? `<span class="badge badge-keep">📌 残す</span>`
+      : status === "discarded"
+        ? `<span class="badge badge-discard">🗑 消した</span>`
+        : "";
 
     const summary = document.createElement("summary");
     summary.innerHTML = `
       <div class="row-top">
         <div style="flex:1;min-width:0;">
-          <span class="genre-chip" style="background:var(${gm.varname})">${gm.label}</span>
+          <span class="genre-chip" style="background:var(${gm.varname})">${gm.label}</span>${badgeHtml}
           <h3>${escapeHtml(v.title)}</h3>
           <div class="meta">${escapeHtml(v.channel)} ・ ${escapeHtml(v.duration)} ・ ${escapeHtml(v.date)}</div>
           <div class="oneline serif">${escapeHtml(v.one)}</div>
@@ -960,6 +1122,37 @@ function render(){
     a.rel = "noopener";
     a.textContent = "YouTubeで見る ↗";
     detail.appendChild(a);
+
+    const actionRow = document.createElement("div");
+    actionRow.className = "action-row";
+
+    const keepBtn = document.createElement("button");
+    keepBtn.className = "action-btn keep" + (status === "keep" ? " active" : "");
+    keepBtn.textContent = "📌 残す";
+    keepBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      setVideoStatus(v.url, status === "keep" ? undefined : "keep");
+      render();
+    });
+    actionRow.appendChild(keepBtn);
+
+    const discardBtn = document.createElement("button");
+    discardBtn.className = "action-btn discard" + (status === "discarded" ? " active" : "");
+    discardBtn.textContent = "🗑 消す";
+    discardBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const wasStatus = status;
+      setVideoStatus(v.url, "discarded");
+      render();
+      if(!showDiscarded){
+        showToast(`「${v.title.slice(0,20)}…」を一覧から隠しました`, ()=>{
+          setVideoStatus(v.url, wasStatus);
+        });
+      }
+    });
+    actionRow.appendChild(discardBtn);
+
+    detail.appendChild(actionRow);
 
     card.appendChild(detail);
     main.appendChild(card);
